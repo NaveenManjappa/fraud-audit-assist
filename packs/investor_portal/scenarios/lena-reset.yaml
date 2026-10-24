@@ -1,0 +1,13 @@
+name: lena-reset
+description: >-
+  D-77's third Account, ten days before Margaret: a password reset and a new phone number from the same Romanian
+  device.
+account_id: ACC-LENA
+customer_id: HOLDER-LENA
+start: 2026-09-11T08:30:00Z
+baseline: { device: D-LENA-TABLET, ip: 203.0.113.97, country: GB }
+actors:
+  fraudster: { device: D-77, ip: 198.51.100.77, country: RO }
+steps:
+  - { after: 0m, type: PasswordReset, as: fraudster }
+  - { after: 15m, type: PhoneChanged, as: fraudster, attributes: { new_phone: "+40 700 000 177" } }

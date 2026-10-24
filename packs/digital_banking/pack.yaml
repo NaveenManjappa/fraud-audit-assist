@@ -1,0 +1,65 @@
+# Digital banking: retail customers bank online and in a mobile app. The fraud is account takeover that drains
+# balances to new payees (often mule accounts), and accounts opened with stolen identities to move money.
+id: digital_banking
+name: Digital banking
+description: >-
+  A retail bank's online and mobile banking service where Customers manage their accounts, add payees and send
+  faster payments. Fraudsters take over genuine Customers' accounts (often after a SIM swap or a phishing call) and
+  drain them to new payees, frequently money-mule accounts that receive from several victims, or open accounts with
+  stolen identities to launder money. Holding a payment or adding friction must be justified and audited.
+
+terminology:
+  account: Account
+  customer: Customer
+
+event_types:
+  - { name: AccountOpened, category: onboarding }
+  - { name: LoginSucceeded, category: authentication }
+  - { name: LoginFailed, category: authentication }
+  - { name: PasswordReset, category: account_recovery }
+  - { name: SimSwapDetected, category: telco_signal, description: The mobile operator reports a recent SIM swap on the Customer's number }
+  - { name: DeviceRegistered, category: device_binding }
+  - { name: MfaEnrolled, category: mfa }
+  - { name: EmailChanged, category: account_maintenance }
+  - { name: PhoneChanged, category: account_maintenance }
+  - { name: AddressChanged, category: account_maintenance }
+  - { name: LimitIncreased, category: account_maintenance, description: Daily payment limit raised }
+  - { name: CardOrdered, category: cards }
+  - { name: PayeeAdded, category: payments }
+  - { name: TransferInitiated, category: payments }
+
+identifiers:
+  - { kind: device, field: device_id, label: Device, linking: true }
+  - { kind: email, field: attributes.new_email, label: Email, linking: true }
+  - { kind: phone, field: attributes.new_phone, label: Phone, linking: true }
+  # A payee account that receives from several unrelated Customers is the classic mule signal.
+  - { kind: payee_account, field: attributes.payee_account_hash, label: Payee account, linking: true }
+  - { kind: ip_address, field: ip_address, label: IP address, linking: false }
+  - { kind: address, field: attributes.new_postcode, label: Address, linking: false }
+
+non_identifying_attributes: [amount, currency, new_limit, payment_reference_type]
+
+typologies:
+  - id: AccountTakeover
+    description: A fraudster has gained control of a genuine Customer's online banking.
+  - id: ApplicationFraud
+    description: The account was opened with a stolen or synthetic identity, usually to move fraud proceeds.
+
+actions:
+  - id: HoldOutboundPayments
+    description: Hold outbound payments to new payees until the Customer is verified.
+    restrictive: true
+    duration_days: 3
+  - id: StepUpVerification
+    description: Require the Customer to re-verify identity in branch or by video call before further changes.
+    restrictive: true
+    duration_days: 14
+  - id: ContactCustomer
+    description: Call the Customer on the number held before the most recent change.
+    restrictive: false
+  - id: NoAction
+    description: Close the Case with no intervention.
+    restrictive: false
+    records_intervention: false
+
+default_rules: v1

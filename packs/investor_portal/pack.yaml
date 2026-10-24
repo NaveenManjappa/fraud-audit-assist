@@ -1,0 +1,62 @@
+# Investor portal: shareholders view holdings, manage payment instructions and sell or transfer shares.
+# The fraud is account takeover and registration fraud that redirects dividends or sale proceeds.
+id: investor_portal
+name: Investor portal
+description: >-
+  An online investor portal where shareholders (Holders) view their holdings, manage payment instructions and sell
+  or transfer shares. Fraudsters take over genuine Holders' accounts, or register accounts with stolen or synthetic
+  identities, to redirect dividends and sale proceeds to their own bank accounts or to sell the holding outright.
+  Blocking a bank-detail change or contacting a Holder is a regulated action that must be justified and audited.
+
+terminology:
+  account: Account
+  customer: Holder
+
+event_types:
+  - { name: LoginSucceeded, category: authentication }
+  - { name: LoginFailed, category: authentication }
+  - { name: PasswordResetRequested, category: account_recovery }
+  - { name: PasswordReset, category: account_recovery }
+  - { name: MfaEnrolled, category: mfa }
+  - { name: MfaRemoved, category: mfa }
+  - { name: EmailChanged, category: account_maintenance }
+  - { name: PhoneChanged, category: account_maintenance }
+  - { name: AddressChanged, category: account_maintenance }
+  - { name: AccountRegistered, category: registration }
+  - { name: BankDetailsChanged, category: payment_instructions, description: Payout bank account changed }
+  - { name: SaleRequested, category: transactions }
+  - { name: TransferRequested, category: transactions }
+
+# Linking identifiers suggest one person or gang when reused across Accounts. IP addresses and postal addresses are
+# shared innocently by households, offices and mobile carriers, so they are recorded and masked but never link.
+identifiers:
+  - { kind: device, field: device_id, label: Device, linking: true }
+  - { kind: email, field: attributes.new_email, label: Email, linking: true }
+  - { kind: phone, field: attributes.new_phone, label: Phone, linking: true }
+  - { kind: bank_account, field: attributes.new_bank_account_hash, label: Bank account, linking: true }
+  - { kind: ip_address, field: ip_address, label: IP address, linking: false }
+  - { kind: address, field: attributes.new_postcode, label: Address, linking: false }
+
+# Shown to the agents as they are. Every other attribute is masked, including fields a source adds later.
+non_identifying_attributes: [amount, currency, shares]
+
+typologies:
+  - id: AccountTakeover
+    description: A fraudster has gained control of a genuine Holder's account.
+  - id: RegistrationFraud
+    description: The account was opened with a stolen or synthetic identity.
+
+actions:
+  - id: BlockBankChanges
+    description: Block bank-detail changes and payouts to new bank details for a period.
+    restrictive: true
+    duration_days: 7
+  - id: ContactHolder
+    description: Contact the Holder by post at the address on file to confirm the activity.
+    restrictive: false
+  - id: NoAction
+    description: Close the Case with no intervention.
+    restrictive: false
+    records_intervention: false
+
+default_rules: v3

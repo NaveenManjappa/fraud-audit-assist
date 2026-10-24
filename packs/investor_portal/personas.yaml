@@ -1,0 +1,118 @@
+# Synthetic Holder behaviour for the investor portal. `share` is the fraction of all Accounts; `min_count` makes
+# every Persona appear even in a small Dataset; the `fill` Persona takes whatever is left.
+# Journeys start 68-74 days into a 90-day clock, leaving room for the slowest journey to finish.
+clock:
+  start: 2026-06-23T00:00:00Z
+  span: 90d
+  journey_start: [68d, 74d]
+home_country: GB
+
+personas:
+  - id: quiet_holder
+    label: Genuine
+    fill: true
+    baseline: { gap: [4d, 10d], until: end }
+
+  - id: house_mover
+    label: Genuine
+    share: 0.07
+    min_count: 1
+    baseline: { gap: [2d, 7d] }
+    journey:
+      - { type: AddressChanged, attributes: { new_postcode: "RG{int:1-9} {int:1-9}AA" } }
+      - { type: PhoneChanged, after: [1d, 3d], attributes: { new_phone: "+44 7700 9{int:00000-99999}" } }
+
+  # A genuine recovery from a new handset: realistic false-positive pressure on the recovery rules.
+  - id: new_phone
+    label: Genuine
+    share: 0.07
+    min_count: 1
+    baseline: { gap: [2d, 7d] }
+    actors:
+      new_handset: { device: "D-{n}-NEW", ip: usual, country: usual }
+    journey:
+      - { type: PasswordResetRequested, as: new_handset }
+      - { type: PasswordReset, as: new_handset, after: [2m, 10m] }
+      - { type: MfaEnrolled, as: new_handset, after: [1m, 20m] }
+
+  - id: active_trader
+    label: Genuine
+    share: 0.07
+    min_count: 1
+    baseline: { gap: [12h, 2d], until: end }
+    per_login:
+      chance: 0.25
+      step: { type: SaleRequested, after: [5m, 30m], attributes: { amount: "{int:5-499}00" } }
+
+  # Abroad on a new device: reset, MFA and phone change inside the R1/R2 Windows. Reaches High: the false
+  # positive the feedback loop learns from.
+  - id: travelling_holder
+    label: Genuine
+    share: 0.02
+    min_count: 1
+    baseline: { gap: [2d, 7d] }
+    actors:
+      traveller: { device: "D-{n}-TRAVEL", ip: "2001:db8:a::{hex}", country: "{choice:ES|FR|US|TH}" }
+    journey:
+      - { type: PasswordReset, as: traveller }
+      - { type: MfaEnrolled, as: traveller, after: [2m, 45m] }
+      - { type: PhoneChanged, as: traveller, after: [1h, 20h], from: 1, attributes: { new_phone: "+44 7700 9{int:00000-99999}" } }
+
+  - id: ato_fraudster
+    label: AccountTakeover
+    share: 0.0075
+    min_count: 1
+    baseline: { gap: [2d, 7d] }
+    actors:
+      fraudster: { device: "D-X{n}", ip: "2001:db8:f::{hex}", country: "{choice:RO|NG|BR|VN}" }
+    journey:
+      - { type: PasswordReset, as: fraudster }
+      - { type: MfaEnrolled, as: fraudster, after: [2m, 15m] }
+      - { type: EmailChanged, as: fraudster, after: [2m, 20m], attributes: { new_email: "takeover.{n}@example.net" } }
+      - { type: BankDetailsChanged, as: fraudster, after: [20h, 2d], attributes: { new_bank_account_hash: "BA-{hex4}" } }
+      - { type: SaleRequested, as: fraudster, after: [1d, 3d], attributes: { amount: "{int:50-500}00" } }
+
+  # The same steps, each just beyond its pairwise Window (R1 1h, R2 1d, R3 3d, R4 7d). v1/v2 miss it; v3's R7
+  # (one device, 14 days) catches it.
+  - id: slow_burn_fraudster
+    label: AccountTakeover
+    tags: [evasion]
+    share: 0.0075
+    min_count: 1
+    baseline: { gap: [2d, 7d] }
+    actors:
+      fraudster: { device: "D-X{n}", ip: "2001:db8:f::{hex}", country: "{choice:RO|NG|BR|VN}" }
+    journey:
+      - { type: PasswordReset, as: fraudster }
+      - { type: MfaEnrolled, as: fraudster, after: [2h, 6h] }
+      - { type: EmailChanged, as: fraudster, after: [2d, 3d], from: 1, attributes: { new_email: "slow.{n}@example.net" } }
+      - { type: BankDetailsChanged, as: fraudster, after: [3d1h, 4d], attributes: { new_bank_account_hash: "BA-{hex4}" } }
+      - { type: SaleRequested, as: fraudster, after: [7d1h, 8d], attributes: { amount: "{int:50-500}00" } }
+
+  # A brand-new Account opened with a stolen identity: no baseline to compare against.
+  - id: registration_fraudster
+    label: RegistrationFraud
+    share: 0.0075
+    min_count: 1
+    actors:
+      fraudster: { device: "D-X{n}", ip: "2001:db8:f::{hex}", country: "{choice:RO|NG|BR|VN}" }
+    journey:
+      - { type: AccountRegistered, as: fraudster }
+      - { type: BankDetailsChanged, as: fraudster, after: [2h, 30h], attributes: { new_bank_account_hash: "BA-{hex4}" } }
+      - { type: SaleRequested, as: fraudster, after: [1d, 4d], attributes: { amount: "{int:50-500}00" } }
+
+  # Five Accounts taken over by one ring that reuses its device and payout account. Each alone looks moderately
+  # risky; the shared identifiers are what the graph rules find.
+  - id: fraud_ring
+    label: AccountTakeover
+    tags: [ring]
+    share: 0.0075
+    min_count: 5
+    group_size: 5
+    baseline: { gap: [2d, 7d] }
+    actors:
+      ring: { device: "D-RING-{group}", ip: "192.0.2.{group}", country: GB }
+    journey:
+      - { type: LoginSucceeded, as: ring }
+      - { type: EmailChanged, as: ring, after: [5m, 1h], attributes: { new_email: "ring{group}.{n}@example.net" } }
+      - { type: BankDetailsChanged, as: ring, after: [1d, 2d], attributes: { new_bank_account_hash: "BA-RING-{group}" } }

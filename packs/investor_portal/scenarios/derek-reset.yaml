@@ -1,0 +1,13 @@
+name: derek-reset
+description: >-
+  D-77's first known target: three weeks before Margaret, the fraudster resets Derek's password and enrols their
+  own MFA from the same Romanian device, then goes quiet.
+account_id: ACC-DEREK
+customer_id: HOLDER-DEREK
+start: 2026-09-01T20:00:00Z
+baseline: { device: D-DEREK-PC, ip: 203.0.113.62, country: GB }
+actors:
+  fraudster: { device: D-77, ip: 198.51.100.77, country: RO }
+steps:
+  - { after: 0m, type: PasswordReset, as: fraudster }
+  - { after: 6m, type: MfaEnrolled, as: fraudster }

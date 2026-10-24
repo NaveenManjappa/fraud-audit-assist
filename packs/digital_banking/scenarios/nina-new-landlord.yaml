@@ -1,0 +1,11 @@
+name: nina-new-landlord
+description: >-
+  A genuine Customer adds her new landlord as a payee and pays the deposit from her usual phone. The new-payee rule
+  fires on its own, which should stay below High.
+account_id: ACC-NINA
+customer_id: CUST-NINA
+baseline: { device: D-NINA-PHONE, ip: 203.0.113.150, country: GB }
+steps:
+  - { after: 0m, type: PayeeAdded, attributes: { payee_account_hash: PA-LANDLORD-NINA } }
+  - { after: 20m, type: TransferInitiated, attributes: { payee_account_hash: PA-LANDLORD-NINA, amount: 1850 } }
+label: { kind: Genuine, intent: "A large payment to a new payee from the usual device must stay below High." }

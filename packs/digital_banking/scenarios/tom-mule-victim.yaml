@@ -1,0 +1,18 @@
+name: tom-mule-victim
+description: >-
+  An earlier victim of the same gang: after a SIM swap, Tom's account pays 3,900 to mule payee PA-MULE-77. Tom
+  reported it and the Account was Confirmed Fraud two days later.
+account_id: ACC-TOM
+customer_id: CUST-TOM
+start: 2026-09-14T10:00:00Z
+baseline: { device: D-TOM-PHONE, ip: 203.0.113.140, country: GB }
+actors:
+  fraudster: { device: D-GANG-1, ip: 198.51.100.140, country: GB }
+steps:
+  - { after: 0m, type: SimSwapDetected }
+  - { after: 40m, type: PasswordReset, as: fraudster }
+  - { after: 45m, type: DeviceRegistered, as: fraudster }
+  - { after: 1h10m, type: PayeeAdded, as: fraudster, attributes: { payee_account_hash: PA-MULE-77 } }
+  - { after: 1h20m, type: TransferInitiated, as: fraudster, attributes: { payee_account_hash: PA-MULE-77, amount: 3900 } }
+label: { kind: AccountTakeover, intent: "The first known victim of the PA-MULE-77 gang, seeded as Confirmed Fraud." }
+confirmed_fraud: 2026-09-16T09:00:00Z

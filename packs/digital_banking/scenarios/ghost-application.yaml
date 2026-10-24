@@ -1,0 +1,12 @@
+name: ghost-application
+description: >-
+  An account opened with a stolen identity adds a payee within hours and sends 2,500 out the next morning.
+account_id: ACC-GHOST
+customer_id: CUST-GHOST
+actors:
+  fraudster: { device: D-GHOST, ip: 198.51.100.160, country: GB }
+steps:
+  - { after: 0m, type: AccountOpened, as: fraudster }
+  - { after: 5h, type: PayeeAdded, as: fraudster, attributes: { payee_account_hash: PA-OUT-GHOST } }
+  - { after: 18h, type: TransferInitiated, as: fraudster, attributes: { payee_account_hash: PA-OUT-GHOST, amount: 2500 } }
+label: { kind: ApplicationFraud, intent: "Open, add a payee and pay out within a day." }

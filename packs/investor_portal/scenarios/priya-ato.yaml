@@ -1,0 +1,17 @@
+name: priya-ato
+description: >-
+  The takeover that made D-77 known fraud: the same playbook as Margaret's, ending in a payout redirect. Priya
+  reported it and the Account was Confirmed Fraud on 2026-09-14.
+account_id: ACC-PRIYA
+customer_id: HOLDER-PRIYA
+start: 2026-09-07T13:00:00Z
+baseline: { device: D-PRIYA-LAPTOP, ip: 203.0.113.88, country: GB }
+actors:
+  fraudster: { device: D-77, ip: 198.51.100.77, country: RO }
+steps:
+  - { after: 0m, type: PasswordReset, as: fraudster }
+  - { after: 3m, type: MfaEnrolled, as: fraudster }
+  - { after: 8m, type: EmailChanged, as: fraudster, attributes: { new_email: p.attacker@example.net } }
+  - { after: 1d2h, type: BankDetailsChanged, as: fraudster, attributes: { new_bank_account_hash: BA-4c07 } }
+label: { kind: AccountTakeover, intent: "The original D-77 takeover, seeded as Confirmed Fraud." }
+confirmed_fraud: 2026-09-14T11:00:00Z
