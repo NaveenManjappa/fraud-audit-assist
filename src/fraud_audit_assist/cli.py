@@ -7,8 +7,9 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from pydantic import ValidationError
 
-from fraud_audit_assist.config import get_settings
+from fraud_audit_assist.config import Settings, get_settings
 from fraud_audit_assist.domain.packs import load_pack
 from fraud_audit_assist.domain.scenarios import Scenario, load_scenario, load_scenarios
 
@@ -36,10 +37,29 @@ AnalystKey = Annotated[
 ]
 
 
+def _settings() -> Settings:
+    """The validated settings, or a short list of what is wrong and exit code 2, instead of a traceback."""
+    try:
+        return get_settings()
+    except ValidationError as error:
+        typer.echo("Configuration error:", err=True)
+        for problem in error.errors():
+            location = ".".join(str(part) for part in problem["loc"]) or "settings"
+            typer.echo(f"  {location}: {problem['msg'].removeprefix('Value error, ')}", err=True)
+        raise typer.Exit(code=2) from error
+
+
 @app.command()
 def serve(host: str = "127.0.0.1", port: int = 8000) -> None:
-    """Runs the API with uvicorn."""
+    """Runs the API with uvicorn, after checking the settings and the pack."""
     import uvicorn
+
+    settings = _settings()
+    try:
+        load_pack(settings.pack_dir, settings.rules_version)
+    except (ValueError, FileNotFoundError) as error:
+        typer.echo(f"Pack error: {error}", err=True)
+        raise typer.Exit(code=2) from error
 
     uvicorn.run("fraud_audit_assist.api.main:app", host=host, port=port, log_config=None, proxy_headers=True)
 
@@ -50,7 +70,9 @@ def db_upgrade(revision: str = "head") -> None:
     from alembic import command
     from alembic.config import Config
 
+    settings = _settings()
     command.upgrade(Config("alembic.ini"), revision)
+    typer.echo(f"Database migrated to {revision}: {settings.database_url.split('@')[-1]}")
 
 
 @db_app.command("rebuild-links")
@@ -59,7 +81,7 @@ def rebuild_links() -> None:
     from fraud_audit_assist.container import build_container
 
     async def run() -> int:
-        async with build_container(get_settings()) as container:
+        async with build_container(_settings()) as container:
             return await container.ingestion.rebuild_links()
 
     typer.echo(f"Rebuilt links from {asyncio.run(run())} events.")
@@ -82,7 +104,7 @@ def scenario_dry_run(paths: list[Path], pack: PackOption = None, rules: RulesOpt
     """
     from fraud_audit_assist.simulator.dry_run import dry_run, render
 
-    pack_dir = pack or get_settings().pack_dir
+    pack_dir = pack or _settings().pack_dir
     loaded = load_pack(pack_dir, rules)
     results = asyncio.run(dry_run(loaded, _scenarios(paths, pack_dir)))
     typer.echo(f"Rules {loaded.pack.id} {loaded.rules.version}" + render(results))
@@ -99,7 +121,7 @@ def scenario_post(
     """Posts Scenarios to a running API in first-event order, then seeds their Confirmed Frauds."""
     from fraud_audit_assist.simulator.client import ApiClient
 
-    scenarios = sorted(_scenarios(paths, pack or get_settings().pack_dir), key=lambda s: s.first_event_at())
+    scenarios = sorted(_scenarios(paths, pack or _settings().pack_dir), key=lambda s: s.first_event_at())
 
     async def run() -> None:
         async with ApiClient(api_url, api_key, analyst_key) as client:
@@ -127,7 +149,7 @@ def dataset_generate(
     """Writes a seeded, labelled Dataset. The same pack, seed and size always give a byte-identical file."""
     from fraud_audit_assist.simulator.personas import generate_dataset, load_personas, write_dataset
 
-    pack_dir = pack or get_settings().pack_dir
+    pack_dir = pack or _settings().pack_dir
     loaded = load_pack(pack_dir).pack
     target = out or Path("datasets") / f"{loaded.id}-seed-{seed}-{accounts}.jsonl"
     dataset = generate_dataset(load_personas(pack_dir, loaded), loaded, seed, accounts)

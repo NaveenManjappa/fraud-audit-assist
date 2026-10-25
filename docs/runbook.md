@@ -1,6 +1,7 @@
 # Runbook
 
-How to run, operate and troubleshoot the service. Commands run from the repository root.
+How to run, operate and troubleshoot the service. Commands run from the repository root. For a step-by-step
+walkthrough with real outputs, read the [user guide](user-guide.md).
 
 ## Start locally
 
@@ -73,7 +74,8 @@ When the API has keys, pass `--api-key` (or `FAA_CLIENT_API_KEY`) with the inges
 
 | Symptom | Cause and fix |
 |---|---|
-| Startup: `LLM provider 'openai' needs an API key` | Set `FAA_LLM__API_KEY` (and `FAA_LLM__ENDPOINT` for Azure). |
+| Startup: `Configuration error:` then `llm: LLM provider 'openai' needs an API key` | Set `FAA_LLM__API_KEY` (and `FAA_LLM__ENDPOINT` for Azure). `faa` exits with code 2 and lists every problem. |
+| Startup: `Pack error: ... has no rules v9` | `FAA_RULES_VERSION` names a version the pack does not have; the message lists those it has. |
 | Startup: `Unsafe production settings` | The message lists each problem: keys, fake LLM or SQLite. |
 | Startup: `Rule R9: unknown event types` | A rules file names an event type the pack's `pack.yaml` does not define. |
 | `422 unknown event types for pack` | The source sent an event type the running pack does not know; check `FAA_PACK_DIR`. |

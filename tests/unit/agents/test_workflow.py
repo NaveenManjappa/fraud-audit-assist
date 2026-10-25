@@ -231,3 +231,20 @@ async def test_free_text_attributes_never_reach_the_model(investor: LoadedPack, 
     assert injection not in line
     assert "notes=VALUE-1" in line
     assert "amount=withheld" in line
+
+
+async def test_workflow_state_is_plain_json(investor: LoadedPack) -> None:
+    # Checkpoints must hold only JSON types: LangGraph will refuse to load application classes such as enums,
+    # which would strand every Case waiting for a decision.
+    h = await harness(investor)
+    await h.run()
+    values = (await h.graph.aget_state(h.config)).values
+
+    def plain(value: Any) -> bool:
+        if isinstance(value, dict):
+            return all(type(k) is str and plain(v) for k, v in value.items())
+        if isinstance(value, list):
+            return all(plain(v) for v in value)
+        return type(value) in (str, int, float, bool, type(None))
+
+    assert plain(values)

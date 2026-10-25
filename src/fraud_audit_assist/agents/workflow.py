@@ -117,7 +117,7 @@ def build_investigation_graph(deps: WorkflowDeps) -> StateGraph[InvestigationSta
             "account_id": context.account_id,
             "rules_version": context.alert.rules_version,
             "brief": brief,
-            "ledger": ledger.model_dump(),
+            "ledger": ledger.model_dump(mode="json"),
             "attempt": 1,
             "reasons": [],
             "finding": None,
@@ -136,19 +136,19 @@ def build_investigation_graph(deps: WorkflowDeps) -> StateGraph[InvestigationSta
             result = await deps.investigator.investigate(state["brief"], state["reasons"], tools)
         except AgentCallError as error:
             return {
-                "ledger": ledger.model_dump(),
-                "usage": state["usage"] + [u.model_dump() for u in error.usage],
+                "ledger": ledger.model_dump(mode="json"),
+                "usage": state["usage"] + [u.model_dump(mode="json") for u in error.usage],
                 "failure": f"Investigator: {error}",
             }
         update: InvestigationState = {
-            "ledger": ledger.model_dump(),
-            "usage": state["usage"] + [u.model_dump() for u in result.usage],
+            "ledger": ledger.model_dump(mode="json"),
+            "usage": state["usage"] + [u.model_dump(mode="json") for u in result.usage],
             "approved": False,
         }
         if result.finding is None:
             log.warning("investigator reply unparseable", case_id=state["case_id"], error=result.parse_error)
             return {**update, "parse_failed": True, "reasons": [NOT_A_FINDING]}
-        return {**update, "parse_failed": False, "finding": result.finding.model_dump()}
+        return {**update, "parse_failed": False, "finding": result.finding.model_dump(mode="json")}
 
     async def validate(state: InvestigationState) -> InvestigationState:
         finding = Finding.model_validate(state["finding"])
@@ -177,7 +177,7 @@ def build_investigation_graph(deps: WorkflowDeps) -> StateGraph[InvestigationSta
             "unknown_refs": [],
             "approved": result.review.approved,
         }
-        usage = state["usage"] + [u.model_dump() for u in result.usage]
+        usage = state["usage"] + [u.model_dump(mode="json") for u in result.usage]
         if result.review.approved:
             return {
                 "approved": True,

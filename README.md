@@ -51,6 +51,9 @@ Flagged before the bank change, which is the goal.
 
 ## Quick start
 
+New to the project? The [user guide](docs/user-guide.md) takes you from installation to a decided Case, step by step,
+with the real output of each command.
+
 Prerequisites: Python 3.12+ and [uv](https://docs.astral.sh/uv/). Docker is optional.
 
 ```bash
@@ -152,7 +155,7 @@ harness that scores against it comes next.
 | `migrations/` | Alembic migrations |
 | `evals/golden/` | Golden dataset |
 | `tests/unit`, `tests/integration` | Pure logic; database, API and migrations (SQLite, and PostgreSQL when configured) |
-| `docs/` | [Architecture](docs/architecture.md), [runbook](docs/runbook.md), [Domain Packs](docs/domain-packs.md), [ADRs](docs/adr/) |
+| `docs/` | [User guide](docs/user-guide.md), [architecture](docs/architecture.md), [runbook](docs/runbook.md), [Domain Packs](docs/domain-packs.md), [ADRs](docs/adr/) |
 | `GLOSSARY.md` | The domain language |
 
 ## Deploy
