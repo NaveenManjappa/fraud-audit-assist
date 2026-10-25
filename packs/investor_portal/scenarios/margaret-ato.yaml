@@ -1,0 +1,16 @@
+name: margaret-ato
+description: >-
+  After months of logins from her laptop in Reading, a fraudster with Margaret's email password takes over her
+  account from a new device in Romania, then redirects payouts the next day. The device, D-77, was already used on
+  three other Accounts (derek-reset, priya-ato, lena-reset), one of them Confirmed Fraud.
+account_id: ACC-MARGARET
+customer_id: HOLDER-MARGARET
+baseline: { device: D-MARGARET-LAPTOP, ip: 203.0.113.51, country: GB }
+actors:
+  fraudster: { device: D-77, ip: 198.51.100.77, country: RO }
+steps:
+  - { after: 0m, type: PasswordReset, as: fraudster }
+  - { after: 4m, type: MfaEnrolled, as: fraudster }
+  - { after: 10m, type: EmailChanged, as: fraudster, attributes: { new_email: m.attacker@example.net } }
+  - { after: 1d5h, type: BankDetailsChanged, as: fraudster, attributes: { new_bank_account_hash: BA-9f31 } }
+label: { kind: AccountTakeover, intent: "Classic recovery takeover from a device already linked to Confirmed Fraud." }

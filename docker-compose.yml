@@ -1,0 +1,34 @@
+# Local stack: PostgreSQL and the API with the free fake LLM. Not a production deployment.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: faa
+      POSTGRES_PASSWORD: faa-local-only
+      POSTGRES_DB: faa
+    volumes:
+      - faa-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U faa -d faa"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FAA_ENVIRONMENT: development
+      FAA_DATABASE_URL: postgresql+psycopg://faa:faa-local-only@db:5432/faa
+      FAA_PACK_DIR: /app/packs/${FAA_PACK:-investor_portal}
+      FAA_LLM__PROVIDER: ${FAA_LLM__PROVIDER:-fake}
+      FAA_LLM__MODEL: ${FAA_LLM__MODEL:-gpt-4.1-mini}
+      FAA_LLM__API_KEY: ${FAA_LLM__API_KEY:-}
+    command: ["sh", "-c", "faa db upgrade && faa serve --host 0.0.0.0 --port 8000"]
+    ports:
+      - "8000:8000"
+
+volumes:
+  faa-db:

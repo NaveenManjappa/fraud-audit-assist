@@ -1,0 +1,104 @@
+[project]
+name = "fraud-audit-assist"
+version = "0.1.0"
+description = "Rules-first fraud detection with LangGraph investigation agents and a human analyst in the loop."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+dependencies = [
+    "alembic>=1.16",
+    "aiosqlite>=0.21",
+    "fastapi>=0.115",
+    "httpx>=0.28",
+    "langchain-anthropic>=1.0",
+    "langchain-core>=1.0",
+    "langchain-openai>=1.0",
+    "langgraph>=1.0",
+    "langgraph-checkpoint-postgres>=3.0",
+    "langgraph-checkpoint-sqlite>=3.0",
+    "opentelemetry-api>=1.30",
+    "opentelemetry-exporter-otlp-proto-http>=1.30",
+    "opentelemetry-instrumentation-fastapi>=0.51b0",
+    "opentelemetry-sdk>=1.30",
+    "prometheus-client>=0.21",
+    "psycopg[binary,pool]>=3.2",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "pyyaml>=6.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "structlog>=24.4",
+    "tenacity>=9.0",
+    "typer>=0.15",
+    "uvicorn[standard]>=0.34",
+]
+
+[project.scripts]
+faa = "fraud_audit_assist.cli:app"
+
+[dependency-groups]
+dev = [
+    "asgi-lifespan>=2.1",
+    "bandit>=1.8",
+    "mypy>=1.14",
+    "pip-audit>=2.7",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "pytest-cov>=6.0",
+    "ruff>=0.9",
+    "types-pyyaml>=6.0",
+]
+
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fraud_audit_assist"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC", "C4", "SIM", "RUF", "PT", "TID", "N"]
+ignore = [
+    # Long explanations in rules and prompts read better unwrapped.
+    "E501",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# assert is how pytest checks; fixed ports and literal secrets in tests are fakes.
+"tests/**" = ["S101", "S105", "S106", "S311"]
+# The simulator's randomness is for reproducible synthetic data, not security.
+"src/fraud_audit_assist/simulator/**" = ["S311"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+packages = ["fraud_audit_assist"]
+
+[[tool.mypy.overrides]]
+module = ["langgraph.*", "langchain_core.*", "langchain_openai.*", "langchain_anthropic.*"]
+# These ship types, but some generics are only partially typed; missing stubs must not fail the build.
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers"
+markers = [
+    "postgres: needs a real PostgreSQL (FAA_TEST_POSTGRES_URL); skipped when it is not set",
+]
+filterwarnings = ["error::pytest.PytestUnraisableExceptionWarning"]
+
+[tool.coverage.run]
+source = ["fraud_audit_assist"]
+branch = true
+
+[tool.bandit]
+exclude_dirs = ["tests"]

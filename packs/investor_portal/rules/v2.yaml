@@ -1,0 +1,96 @@
+# Investor portal rules, v2: v1 unchanged plus the graph rules over the Link Graph (ADR-0014).
+version: v2
+risk_period: 7d
+bands: { medium: 30, high: 60, critical: 90 }
+
+rules:
+  - id: R0
+    name: New device / new country
+    kind: first_sighting
+    fields: [device_id, country]
+    points: 10
+    explanation: "First sighting on this Account: {sighting}"
+
+  - id: R1
+    name: Recovery takeover
+    kind: sequence
+    steps:
+      - types: [PasswordReset]
+      - types: [MfaEnrolled]
+    window: 1h
+    points: 30
+    explanation: "Password reset then MFA enrolment, {elapsed} apart; window {window}"
+
+  - id: R2
+    name: Contact hijack
+    kind: sequence
+    steps:
+      - types: [PasswordReset]
+      - types: [EmailChanged, PhoneChanged]
+    window: 1d
+    points: 20
+    explanation: "Password reset then contact change, {elapsed} apart; window {window}"
+
+  - id: R3
+    name: Payout redirect
+    kind: sequence
+    steps:
+      - types: [EmailChanged, PhoneChanged, AddressChanged]
+      - types: [BankDetailsChanged]
+    window: 3d
+    points: 30
+    explanation: "Contact change then bank-detail change, {elapsed} apart; window {window}"
+
+  - id: R4
+    name: Cash-out
+    kind: sequence
+    steps:
+      - types: [BankDetailsChanged]
+      - types: [SaleRequested, TransferRequested]
+    window: 7d
+    points: 40
+    explanation: "Bank-detail change then sale or transfer, {elapsed} apart; window {window}"
+
+  - id: R5
+    name: Fast-track registration
+    kind: sequence
+    steps:
+      - types: [AccountRegistered]
+      - types: [BankDetailsChanged]
+    window: 2d
+    points: 30
+    explanation: "Registration then bank-detail change, {elapsed} apart; window {window}"
+
+  - id: R6
+    name: Register-and-sell
+    kind: sequence
+    steps:
+      - types: [AccountRegistered]
+      - types: [SaleRequested, TransferRequested]
+    window: 14d
+    points: 30
+    explanation: "Registration then sale or transfer, {elapsed} apart; window {window}"
+
+  - id: G1
+    name: Shared bank account
+    kind: shared_identifier
+    identifier_kinds: [bank_account]
+    distinct_customer: true
+    points: 30
+    explanation: "Pays out to {identifier} {value}, which {account} of a different Holder also pays out to"
+
+  - id: G2
+    name: Known-fraud proximity
+    kind: fraud_proximity
+    identifier_kinds: [device, email, phone, bank_account]
+    points: 25
+    explanation: "Shares {identifier} {value} with Confirmed Fraud Account {account}"
+
+  - id: G3
+    name: Ring indicator
+    kind: ring
+    identifier_kinds: [device, email, phone, bank_account]
+    account_threshold: 3
+    max_hops: 1
+    points: 20
+    explanation: "{identifier} {value} is shared by {accounts} Accounts; Ring threshold {threshold}"

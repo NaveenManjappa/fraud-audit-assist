@@ -1,0 +1,10 @@
+name: patel-house-move
+description: >-
+  A genuine Holder moves house using his usual laptop and IP. No reset and no new device, so no Rule should fire.
+account_id: ACC-PATEL
+customer_id: HOLDER-PATEL
+baseline: { device: D-PATEL-LAPTOP, ip: 203.0.113.24, country: GB }
+steps:
+  - { after: 0m, type: AddressChanged, attributes: { new_postcode: RG1 8AA } }
+  - { after: 2d, type: PhoneChanged, attributes: { new_phone: "+44 7700 900123" } }
+label: { kind: Genuine, intent: "A house move on the usual device must stay Low." }

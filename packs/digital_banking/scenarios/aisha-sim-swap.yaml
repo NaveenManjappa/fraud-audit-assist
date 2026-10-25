@@ -1,0 +1,17 @@
+name: aisha-sim-swap
+description: >-
+  A SIM swap, then a password reset and a new device binding, a phone change and a drain of 4,800 to PA-MULE-77,
+  the payee Confirmed Fraud victim Tom also paid.
+account_id: ACC-AISHA
+customer_id: CUST-AISHA
+baseline: { device: D-AISHA-PHONE, ip: 203.0.113.141, country: GB }
+actors:
+  fraudster: { device: D-GANG-2, ip: 198.51.100.141, country: GB }
+steps:
+  - { after: 0m, type: SimSwapDetected }
+  - { after: 25m, type: PasswordReset, as: fraudster }
+  - { after: 28m, type: DeviceRegistered, as: fraudster }
+  - { after: 40m, type: PhoneChanged, as: fraudster, attributes: { new_phone: "+44 7700 800777" } }
+  - { after: 1h5m, type: PayeeAdded, as: fraudster, attributes: { payee_account_hash: PA-MULE-77 } }
+  - { after: 1h12m, type: TransferInitiated, as: fraudster, attributes: { payee_account_hash: PA-MULE-77, amount: 4800 } }
+label: { kind: AccountTakeover, intent: "SIM-swap takeover draining to a mule payee shared with a Confirmed Fraud victim." }

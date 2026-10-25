@@ -1,0 +1,123 @@
+# Digital banking rules, v1. Windows are inclusive and measured on event time.
+version: v1
+risk_period: 7d
+bands: { medium: 30, high: 60, critical: 90 }
+
+rules:
+  - id: B0
+    name: New device / new country
+    kind: first_sighting
+    fields: [device_id, country]
+    points: 10
+    explanation: "First sighting on this Account: {sighting}"
+
+  - id: B1
+    name: SIM swap then recovery
+    kind: sequence
+    steps:
+      - types: [SimSwapDetected]
+      - types: [PasswordReset, DeviceRegistered]
+    window: 1d
+    points: 35
+    explanation: "SIM swap reported then account recovery, {elapsed} apart; window {window}"
+
+  - id: B2
+    name: Recovery takeover
+    kind: sequence
+    steps:
+      - types: [PasswordReset]
+      - types: [DeviceRegistered, MfaEnrolled]
+    window: 1h
+    points: 30
+    explanation: "Password reset then new device or MFA binding, {elapsed} apart; window {window}"
+
+  - id: B3
+    name: New payee drain
+    kind: sequence
+    steps:
+      - types: [PayeeAdded]
+      - types: [TransferInitiated]
+        where:
+          - { field: attributes.amount, op: gte, value: 1000 }
+    window: 1d
+    # Only a payment to the payee just added counts; paying an established payee is ordinary.
+    join_on: [attributes.payee_account_hash]
+    points: 35
+    explanation: "New payee then a payment of at least 1,000 to it, {elapsed} apart; window {window}"
+
+  - id: B4
+    name: Contact hijack
+    kind: sequence
+    steps:
+      - types: [PasswordReset, DeviceRegistered]
+      - types: [PhoneChanged, EmailChanged]
+    window: 1d
+    points: 20
+    explanation: "Account recovery then contact change, {elapsed} apart; window {window}"
+
+  - id: B5
+    name: Open, add payee, pay out
+    kind: sequence
+    steps:
+      - types: [AccountOpened]
+      - types: [PayeeAdded]
+      - types: [TransferInitiated]
+    window: 3d
+    points: 40
+    explanation: "Account opened, payee added and money sent out, {elapsed} from opening; window {window}"
+
+  - id: B6
+    name: Limit raise then large payment
+    kind: sequence
+    steps:
+      - types: [LimitIncreased]
+      - types: [TransferInitiated]
+        where:
+          - { field: attributes.amount, op: gte, value: 5000 }
+    window: 1d
+    points: 20
+    explanation: "Payment limit raised then a payment of at least 5,000, {elapsed} apart; window {window}"
+
+  - id: V1
+    name: Password guessing
+    kind: velocity
+    step:
+      types: [LoginFailed]
+    count: 5
+    window: 10m
+    points: 15
+    explanation: "{count} {types} events within {window}"
+
+  - id: V2
+    name: Payee spree
+    kind: velocity
+    step:
+      types: [PayeeAdded]
+    count: 3
+    window: 1h
+    points: 25
+    explanation: "{count} {types} events within {window}"
+
+  - id: G1
+    name: Shared payee (mule)
+    kind: shared_identifier
+    identifier_kinds: [payee_account]
+    distinct_customer: true
+    points: 25
+    explanation: "Pays {identifier} {value}, which {account} of a different Customer also pays"
+
+  - id: G2
+    name: Known-fraud proximity
+    kind: fraud_proximity
+    identifier_kinds: [device, email, phone, payee_account]
+    points: 25
+    explanation: "Shares {identifier} {value} with Confirmed Fraud Account {account}"
+
+  - id: G3
+    name: Ring indicator
+    kind: ring
+    identifier_kinds: [device, email, phone]
+    account_threshold: 3
+    max_hops: 2
+    points: 20
+    explanation: "{identifier} {value} links {accounts} Accounts within {hops} hop(s); Ring threshold {threshold}"

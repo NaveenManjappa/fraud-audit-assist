@@ -1,0 +1,83 @@
+# Synthetic Customer behaviour for digital banking.
+clock:
+  start: 2026-06-23T00:00:00Z
+  span: 90d
+  journey_start: [68d, 74d]
+home_country: GB
+
+personas:
+  - id: everyday_customer
+    label: Genuine
+    fill: true
+    baseline: { gap: [1d, 4d], until: end }
+    per_login:
+      chance: 0.3
+      step: { type: TransferInitiated, after: [1m, 10m], attributes: { amount: "{int:5-300}", payee_account_hash: "PA-HOME-{n}" } }
+
+  # Pays a new landlord: a new payee and a large payment, from the usual device. B3 fires; nothing else should.
+  - id: new_landlord
+    label: Genuine
+    share: 0.05
+    min_count: 1
+    baseline: { gap: [1d, 4d] }
+    journey:
+      - { type: PayeeAdded, attributes: { payee_account_hash: "PA-LANDLORD-{n}" } }
+      - { type: TransferInitiated, after: [5m, 2h], attributes: { amount: "{int:1200-2500}", payee_account_hash: "PA-LANDLORD-{n}" } }
+
+  # Replaces a lost phone: a reset and a device binding from a new handset. Realistic pressure on B2.
+  - id: new_handset
+    label: Genuine
+    share: 0.05
+    min_count: 1
+    baseline: { gap: [1d, 4d] }
+    actors:
+      handset: { device: "D-{n}-NEW", ip: usual, country: usual }
+    journey:
+      - { type: PasswordReset, as: handset }
+      - { type: DeviceRegistered, as: handset, after: [1m, 15m] }
+
+  # A SIM swap, a recovery from a new device, a phone change and a drain to a mule payee shared across victims.
+  - id: sim_swap_takeover
+    label: AccountTakeover
+    share: 0.01
+    min_count: 1
+    baseline: { gap: [1d, 4d] }
+    vars: { mule: "PA-MULE-{int:1-3}" }
+    actors:
+      fraudster: { device: "D-X{n}", ip: "2001:db8:f::{hex}", country: GB }
+    journey:
+      - { type: SimSwapDetected }
+      - { type: PasswordReset, as: fraudster, after: [10m, 3h] }
+      - { type: DeviceRegistered, as: fraudster, after: [1m, 10m] }
+      - { type: PhoneChanged, as: fraudster, after: [5m, 1h], attributes: { new_phone: "+44 7700 8{int:00000-99999}" } }
+      - { type: PayeeAdded, as: fraudster, after: [10m, 2h], attributes: { payee_account_hash: "{var:mule}" } }
+      - { type: TransferInitiated, as: fraudster, after: [2m, 30m], attributes: { amount: "{int:1500-9000}", payee_account_hash: "{var:mule}" } }
+
+  # Opens an account with a stolen identity and moves money out within days.
+  - id: application_fraudster
+    label: ApplicationFraud
+    share: 0.01
+    min_count: 1
+    vars: { payee: "PA-OUT-{hex4}" }
+    actors:
+      fraudster: { device: "D-X{n}", ip: "2001:db8:f::{hex}", country: GB }
+    journey:
+      - { type: AccountOpened, as: fraudster }
+      - { type: PayeeAdded, as: fraudster, after: [3h, 1d], attributes: { payee_account_hash: "{var:payee}" } }
+      - { type: TransferInitiated, as: fraudster, after: [10m, 1d], attributes: { amount: "{int:800-4000}", payee_account_hash: "{var:payee}" } }
+
+  # Three victims worked by one herder who reuses a device, a phone and a payee: graph rules link them.
+  - id: device_chain_ring
+    label: AccountTakeover
+    tags: [ring]
+    share: 0.006
+    min_count: 3
+    group_size: 3
+    baseline: { gap: [1d, 4d] }
+    actors:
+      herder: { device: "D-HERD-{group}", ip: "192.0.2.{group}", country: GB }
+    journey:
+      - { type: LoginSucceeded, as: herder }
+      - { type: PhoneChanged, as: herder, after: [5m, 1h], attributes: { new_phone: "+44 7700 7000{group}" } }
+      - { type: LimitIncreased, as: herder, after: [10m, 2h], attributes: { new_limit: "10000" } }
+      - { type: TransferInitiated, as: herder, after: [5m, 1h], attributes: { amount: "{int:5000-9500}", payee_account_hash: "PA-HERD-{group}" } }
