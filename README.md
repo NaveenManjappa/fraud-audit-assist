@@ -5,10 +5,9 @@ events. Cheap, deterministic rules score every event; a link graph connects Acco
 payout accounts; Accounts that reach High get a Case, which two LangGraph agents investigate on masked data; a named
 analyst decides, and every step is audited.
 
-It is the Python counterpart of [vigil](https://github.com/NaveenManjappa/vigil) (C#, Microsoft Agent Framework),
-rebuilt on FastAPI, SQLAlchemy and LangGraph, and made generic: everything business-specific lives in a
-[Domain Pack](docs/domain-packs.md). Two packs ship: `investor_portal` (vigil's account-takeover and registration
-fraud) and `digital_banking` (SIM-swap takeover, mule payees, application fraud).
+Built on FastAPI, SQLAlchemy and LangGraph, the engine is generic: everything business-specific lives in a
+[Domain Pack](docs/domain-packs.md). Two packs ship: `investor_portal` (account takeover and registration fraud on a
+shareholder portal) and `digital_banking` (SIM-swap takeover, mule payees, application fraud).
 
 ## What happens to an event
 
@@ -33,21 +32,21 @@ Margaret's takeover from the investor portal pack, as the engine scores it (`faa
 
 Flagged before the bank change, which is the goal.
 
-## What is new compared with vigil
+## Highlights
 
-| Area | vigil | fraud-audit-assist |
-|---|---|---|
-| Scope | One business, hard-wired | Domain Packs: event catalogue, identifiers, typologies, actions and terminology are config (ADR-0017) |
-| Rules | Two-step sequences, first sighting, three fixed graph queries | Multi-step sequences joined on a field, value conditions, velocity, configurable first sighting, graph rules by kind (ADR-0018) |
-| Slow-burn fraud | Known miss | Caught by a joined 14-day sequence in investor portal v3 |
-| Rings | One hop only | Optional multi-hop rings that follow chains of shared identifiers (ADR-0014) |
-| Graph store | Neo4j, written beside Postgres (dual write) | A link table in the same transaction as the events: no dual write, no second database (ADR-0015) |
-| Dry runs | Skip graph rules | Include graph rules, via an in-memory replay identical to live ingestion |
-| Checkpointing | Resume only at Await Approval | Every step checkpointed; a crash mid-Investigation resumes where it stopped (ADR-0005) |
-| Guardrails | Masking, ref validation, review | Plus masked-by-default attributes against prompt injection and a restrictive-action guardrail (ADR-0006, ADR-0008) |
-| LLM calls | Provider switch, token logging | Gateway with timeouts, transient-only retries, fallback model, rate limit, cost per call (ADR-0009) |
-| Concurrent decisions | Primary-key race | Claim-then-resume, with crash recovery (ADR-0019) |
-| Evaluation | Full harness | A curated golden dataset first; the harness comes next (ADR-0016) |
+| Area | What it does |
+|---|---|
+| Domain Packs | Event catalogue, identifiers, typologies, actions and terminology are config, so a new business needs no code (ADR-0017) |
+| Rules | Multi-step sequences joined on a field, value conditions, velocity, configurable first sighting, graph rules by kind (ADR-0018) |
+| Slow-burn fraud | Steps spaced beyond their pairwise Windows are caught by a joined 14-day sequence (investor portal v3) |
+| Rings | One-hop rings, or multi-hop rings that follow chains of shared identifiers (ADR-0014) |
+| Link Graph | A link table written in the same transaction as the events: no dual write, no second database (ADR-0015) |
+| Dry runs | Score Scenarios in memory, graph rules included, exactly as live ingestion would |
+| Checkpointing | Every Investigation step is checkpointed; a crash mid-Investigation resumes where it stopped (ADR-0005) |
+| Guardrails | Per-Investigation masking, masked-by-default attributes against prompt injection, ref validation, a restrictive-action check (ADR-0006, ADR-0008) |
+| LLM calls | One gateway with timeouts, transient-only retries, fallback model, rate limit and cost per call (ADR-0009) |
+| Decisions | Claim-then-resume, so concurrent decisions cannot both win, with crash recovery (ADR-0019) |
+| Evaluation | A curated golden dataset; the harness comes next (ADR-0016) |
 
 ## Quick start
 

@@ -1,9 +1,8 @@
 # fraud-audit-assist
 
-Rules-first fraud detection, LangGraph investigation agents, a human analyst decides. Python counterpart of vigil,
-made generic through Domain Packs. GLOSSARY.md is the domain language (use its terms in code and docs);
-docs/architecture.md explains the modules; docs/adr/ records decisions (numbering follows vigil's where a decision
-carries over).
+Rules-first fraud detection, LangGraph investigation agents, a human analyst decides, made generic through Domain
+Packs. GLOSSARY.md is the domain language (use its terms in code and docs);
+docs/architecture.md explains the modules; docs/adr/ records decisions.
 
 ## Working agreement
 

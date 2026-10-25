@@ -1,8 +1,8 @@
-# ADR-0003: Python, FastAPI and LangGraph rather than .NET and Microsoft Agent Framework
+# ADR-0003: Python, FastAPI and LangGraph
 
 Status: Accepted | Date: 2026-10-24
 
-This is the Python counterpart of vigil. The stack:
+The stack:
 
 | Concern | Choice |
 |---|---|
@@ -14,9 +14,9 @@ This is the Python counterpart of vigil. The stack:
 | Observability | structlog JSON logs, OpenTelemetry traces, Prometheus metrics |
 | Tooling | uv (lock file), ruff, mypy strict, pytest |
 
-LangGraph gives the same shape vigil got from MAF: fixed steps with agents inside them, a pause that cannot be skipped
-and a checkpoint that survives a restart. Its checkpointers already support PostgreSQL and SQLite, so no custom store
-was needed (vigil wrote `PostgresCheckpointStore`).
+LangGraph gives the shape a regulated process needs: fixed steps with agents inside them, a pause that cannot be
+skipped and a checkpoint that survives a restart. Its checkpointers already support PostgreSQL and SQLite, so no
+custom store is needed.
 
 ## Considered options
 

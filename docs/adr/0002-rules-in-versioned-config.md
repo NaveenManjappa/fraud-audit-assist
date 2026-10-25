@@ -14,10 +14,10 @@ Changing a rule means a new file version; stored Rule Hits are never rescored un
 
 ## Considered options
 
-- **JSON, as vigil uses**: equivalent for machines, but YAML allows the comments analysts need beside a weight.
+- **JSON**: equivalent for machines, but YAML allows the comments analysts need beside a weight.
 - **Rules in the database**: editable at runtime, but needs an admin UI and its own audit trail.
 
-## Difference from vigil
+## Rule Hits record their own version
 
 Each Rule Hit also records the Rule Set version that produced it, because a stored Alert can be extended by hits
 from a newer Rule Set than the one that opened it.

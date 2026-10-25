@@ -17,8 +17,8 @@ apply events in time order, so a rule never sees a link from the future.
 
 The same rule code runs on the SQL link table (live) and an in-memory graph (dry runs, replay, tests).
 
-## Difference from vigil
+## Multi-hop rings
 
-vigil's rings were one hop only (a known limit: A–B on a device and B–C on a phone was not a ring). `max_hops` above
-1 follows such chains, bounded at 200 explored Accounts so a busy shared identifier cannot explode the search, and
+A one-hop ring misses chains: A and B on one device and B and C on one phone is not a ring. `max_hops` above 1
+follows such chains, bounded at 200 explored Accounts so a busy shared identifier cannot explode the search, and
 Neighbour re-checks reach as far as the widest ring rule.

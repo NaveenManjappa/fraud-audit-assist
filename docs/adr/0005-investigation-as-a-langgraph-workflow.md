@@ -23,10 +23,11 @@ Rules the code relies on:
   so every path reaches the analyst. Infrastructure errors do raise, and the startup re-queue retries the Case.
 - Node names are part of the checkpoint; renaming one strands threads that are waiting.
 
-## Difference from vigil
+## Why the ledger lives in the state
 
-vigil passed live masking objects by reference between executors because they could not be serialised, so it could
-only resume at Await Approval. Here the ledger is a model in the state, so any step can resume.
+The masking objects could have been passed between steps by reference, but then nothing before Await Approval could
+be checkpointed and a crash would restart the Investigation from the beginning. Keeping the ledger in the state means
+any step can resume.
 
 ## Considered options
 
